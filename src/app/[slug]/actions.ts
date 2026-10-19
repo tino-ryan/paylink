@@ -56,6 +56,7 @@ export async function createCustomerRequest(
     .from("providers")
     .select("id")
     .eq("slug", slug)
+    .is("suspended_at", null)
     .maybeSingle<{ id: string }>();
 
   if (providerError) {

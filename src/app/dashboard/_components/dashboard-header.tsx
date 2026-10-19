@@ -1,45 +1,28 @@
-'use client'
-
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+// src/app/dashboard/_components/dashboard-header.tsx
+// Slim top bar for every signed-in screen: wordmark left, your initials right.
+import Link from "next/link";
+import { Wordmark } from "@/components/brand/Logo";
+import { initialsOf } from "@/components/ui/Surface";
 
 export function DashboardHeader({ providerName }: { providerName: string }) {
-  const router = useRouter()
-  const supabase = createClient()
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-    router.refresh()
-  }
-
   return (
-    <header className="border-b border-gray-200 bg-white">
-      <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-semibold text-gray-900">PayLink</p>
-            <p className="text-xs text-gray-500">{providerName}</p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link
-              href="/dashboard/settings"
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
-            >
-              Settings
-            </Link>
-
-            <button
-              onClick={handleSignOut}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
+    <header className="sticky top-0 z-30 bg-cream/95 pt-[env(safe-area-inset-top)] backdrop-blur print:hidden">
+      <div className="mx-auto flex h-[60px] max-w-md items-center justify-between px-4">
+        <Link
+          href="/dashboard"
+          aria-label="PayLink, your jobs"
+          className="flex min-h-11 items-center rounded-lg focus-visible:outline-3 focus-visible:outline-jade-600"
+        >
+          <Wordmark className="text-2xl" />
+        </Link>
+        <Link
+          href="/dashboard/settings"
+          aria-label={`Profile and settings for ${providerName}`}
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-apricot-soft font-display text-base font-extrabold text-jade focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-jade-600"
+        >
+          {initialsOf(providerName)}
+        </Link>
       </div>
     </header>
-  )
+  );
 }

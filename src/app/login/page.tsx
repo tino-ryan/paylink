@@ -1,34 +1,36 @@
 // src/app/login/page.tsx
-import { LoginForm } from "@/components/auth/LoginForm";
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { LoginForm } from "@/components/auth/LoginForm";
+import { AuthShell } from "@/components/ui/AuthShell";
 
-export default async function LoginPage() {
+interface Props {
+  searchParams: Promise<{ mode?: string | string[] }>;
+}
+
+export default async function LoginPage({ searchParams }: Props) {
+  const { mode } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Already logged in — send them home
+  // Already signed in: send them on.
   if (user) {
     const { data: provider } = await supabase
       .from("providers")
       .select("id")
       .eq("user_id", user.id)
-      .single();
-
+      .maybeSingle();
     redirect(provider ? "/dashboard" : "/onboarding");
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">PayLink</h1>
-          <p className="text-gray-500 mt-1">Get paid. No fuss.</p>
-        </div>
-        <LoginForm />
-      </div>
-    </main>
+    <AuthShell
+      title="Send a link. Get paid."
+      description="Send a payment link by WhatsApp. Your customer pays from their phone, no app needed."
+    >
+      <LoginForm initialMode={mode === "create" ? "create" : "signin"} />
+    </AuthShell>
   );
 }

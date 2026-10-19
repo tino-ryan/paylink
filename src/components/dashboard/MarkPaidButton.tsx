@@ -4,24 +4,33 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import type { PaidMethod } from "@/lib/types";
+import { Button } from "@/components/ui/Button";
+import { Notice } from "@/components/ui/Surface";
 
 export interface MarkPaidButtonProps {
   code: string;
+  amountLabel: string;
 }
 
-export function MarkPaidButton({ code }: MarkPaidButtonProps) {
-  const [loading, setLoading] = useState(false);
+const METHODS: { value: PaidMethod; label: string }[] = [
+  { value: "eft", label: "Bank transfer" },
+  { value: "cashsend", label: "CashSend" },
+  { value: "cash", label: "Cash" },
+];
+
+/**
+ * "Mark as paid", then one tap for how they paid. The method goes on the
+ * customer's receipt; the database adds the receipt number.
+ */
+export function MarkPaidButton({ code, amountLabel }: MarkPaidButtonProps) {
+  const [saving, setSaving] = useState<PaidMethod | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  async function handleMarkPaid() {
-    if (!confirming) {
-      setConfirming(true);
-      return;
-    }
-
-    setLoading(true);
+  async function markPaid(method: PaidMethod) {
+    setSaving(method);
     setError(null);
 
     // RLS lets a provider update only their own requests.
@@ -29,11 +38,11 @@ export function MarkPaidButton({ code }: MarkPaidButtonProps) {
     const supabase = createClient();
     const { error: updateError } = await supabase
       .from("payment_requests")
-      .update({ status: "paid", paid_at: new Date().toISOString() })
+      .update({ status: "paid", paid_at: new Date().toISOString(), paid_method: method })
       .eq("short_code", code)
       .in("status", ["pending", "expired"]);
 
-    setLoading(false);
+    setSaving(null);
 
     if (updateError) {
       setError("Couldn't save that. Check your signal and try again.");
@@ -45,35 +54,36 @@ export function MarkPaidButton({ code }: MarkPaidButtonProps) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {confirming ? (
-        <div className="flex gap-2">
-          <button
-            onClick={handleMarkPaid}
-            disabled={loading}
-            className="flex-1 bg-emerald-600 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-50"
-          >
-            {loading ? "Saving…" : "Yes, I got the money"}
-          </button>
-          <button
-            onClick={() => setConfirming(false)}
-            disabled={loading}
-            className="flex-1 border border-gray-200 text-gray-600 font-medium py-3 rounded-xl text-sm"
-          >
-            Cancel
-          </button>
+        <div className="space-y-3">
+          <p className="text-base font-semibold text-ink">
+            How did you get the {amountLabel}?
+          </p>
+          <p className="text-sm text-muted">Only confirm once you&apos;ve seen the money. It goes on their receipt.</p>
+          <div className="grid grid-cols-3 gap-2">
+            {METHODS.map((method) => (
+              <Button
+                key={method.value}
+                onClick={() => markPaid(method.value)}
+                loading={saving === method.value}
+                disabled={saving !== null && saving !== method.value}
+                className="px-2"
+              >
+                {method.label}
+              </Button>
+            ))}
+          </div>
+          <Button variant="ghost" fullWidth onClick={() => setConfirming(false)} disabled={saving !== null}>
+            Not yet
+          </Button>
         </div>
       ) : (
-        <button
-          onClick={handleMarkPaid}
-          className="w-full border-2 border-emerald-600 text-emerald-600 font-semibold py-3 rounded-xl text-sm hover:bg-emerald-50 transition-colors"
-        >
+        <Button variant="secondary" fullWidth onClick={() => setConfirming(true)}>
           Mark as paid
-        </button>
+        </Button>
       )}
-      {error && (
-        <p className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{error}</p>
-      )}
+      {error && <Notice tone="error">{error}</Notice>}
     </div>
   );
 }

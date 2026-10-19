@@ -28,6 +28,15 @@ export const formatRand = (cents: number): string => {
 };
 
 /**
+ * Plain amount for pasting into a banking app: 125050 → "1250.50".
+ * No "R", no spaces, integer arithmetic only.
+ */
+export const centsToPlainAmount = (cents: number): string => {
+  const abs = Math.abs(Math.trunc(cents));
+  return `${cents < 0 ? "-" : ""}${Math.floor(abs / 100)}.${(abs % 100).toString().padStart(2, "0")}`;
+};
+
+/**
  * Parse a Rand amount typed by a person into integer cents, without floats.
  *
  * Accepts the ways South Africans actually type money:
@@ -75,6 +84,19 @@ export const parseRandInput = (input: string): number | null => {
 
   return total > 0 ? total : null;
 };
+
+// ---- Receipts ----
+
+/** 7 → "REC-0007" */
+export const formatReceiptNumber = (n: number): string => `REC-${n.toString().padStart(4, "0")}`;
+
+export const PAID_METHOD_LABELS = {
+  eft: "Bank transfer (EFT)",
+  cashsend: "CashSend",
+  cash: "Cash",
+  card: "Card",
+  other: "Other",
+} as const;
 
 // ---- Status & expiry ----
 

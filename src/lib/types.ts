@@ -5,6 +5,8 @@ export type AccountType = "cheque" | "savings";
 export type RequestStatus = "pending" | "paid" | "expired";
 export type PaymentMethod = "card" | "instant_eft" | "cashsend" | "manual_eft";
 export type RequestCreatedBy = "provider" | "customer";
+/** How a paid job was paid, as recorded by the provider. */
+export type PaidMethod = "eft" | "cashsend" | "cash" | "card" | "other";
 
 export interface Provider {
   id: string;
@@ -20,6 +22,12 @@ export interface Provider {
   cashsend_phone: string | null;
   cashsend_bank: string | null;
   created_at: string;
+  /** Set by PayLink after a manual check. Shows the "Verified" badge. */
+  verified_at: string | null;
+  /** When bank/CashSend details last changed (PIN-confirmed). */
+  payout_changed_at: string | null;
+  /** Set by a PayLink admin. Blocks sign-in and switches off their links. */
+  suspended_at: string | null;
 }
 
 export interface PaymentRequest {
@@ -35,6 +43,9 @@ export interface PaymentRequest {
   paid_at: string | null;
   customer_reported_paid_at: string | null;
   created_by: RequestCreatedBy;
+  /** Per-provider running number, set by the database when paid. */
+  receipt_number: number | null;
+  paid_method: PaidMethod | null;
 }
 
 export interface Transaction {
@@ -61,6 +72,7 @@ export type PublicPayoutDetails = Pick<
   | "account_type"
   | "cashsend_phone"
   | "cashsend_bank"
+  | "verified_at"
 >;
 
 export type PublicRequest = Pick<
@@ -72,6 +84,9 @@ export type PublicRequest = Pick<
   | "cashsend_reference"
   | "expires_at"
   | "customer_reported_paid_at"
+  | "paid_at"
+  | "receipt_number"
+  | "paid_method"
 >;
 
 export interface PaymentPageData {
@@ -80,7 +95,7 @@ export interface PaymentPageData {
 }
 
 /** What the public profile page (/[slug]) needs. No payout details. */
-export type PublicProfile = Pick<Provider, "full_name" | "trade" | "slug">;
+export type PublicProfile = Pick<Provider, "full_name" | "trade" | "slug" | "verified_at">;
 
 /** Result shape for server actions. */
 export type ActionResult<T = undefined> =

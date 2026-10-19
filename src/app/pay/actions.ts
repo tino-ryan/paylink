@@ -1,8 +1,11 @@
 // src/app/pay/actions.ts
 "use server";
 
+import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isValidShortCode } from "@/lib/public-data";
+import { sendPushToProvider } from "@/lib/push";
+import { formatRand } from "@/lib/utils";
 import type { ActionResult } from "@/lib/types";
 
 /**
@@ -31,7 +34,7 @@ export async function reportPaymentSent(
     .eq("status", "pending")
     .is("customer_reported_paid_at", null)
     .gt("expires_at", new Date().toISOString())
-    .select("short_code");
+    .select("short_code, provider_id, description, amount_cents");
 
   if (error) {
     return {
@@ -41,6 +44,24 @@ export async function reportPaymentSent(
   }
 
   if (updated && updated.length > 0) {
+    const row = updated[0] as {
+      short_code: string;
+      provider_id: string;
+      description: string;
+      amount_cents: number;
+    };
+
+    // Alert the provider's phone after the response is sent, so the customer
+    // isn't kept waiting. sendPushToProvider never throws.
+    after(async () => {
+      await sendPushToProvider(row.provider_id, {
+        title: "💰 Customer says they've paid",
+        body: `${formatRand(row.amount_cents)} for ${row.description}. Check your bank, then mark it paid.`,
+        url: `/dashboard/requests/${row.short_code}`,
+        tag: `request-${row.short_code}`,
+      });
+    });
+
     return { ok: true, data: { alreadyReported: false } };
   }
 

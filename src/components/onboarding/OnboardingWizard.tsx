@@ -1,70 +1,81 @@
+// src/components/onboarding/OnboardingWizard.tsx
 "use client";
 
 import { useState } from "react";
+import { EMPTY_PAYOUT, type PayoutDetails } from "@/lib/payout";
+import { formatSAPhone } from "@/lib/validation";
 import { Step1Details } from "./steps/Step1Details";
 import { Step2Payout } from "./steps/Step2Payout";
-import type { PayoutMethod, AccountType } from "@/lib/types";
 
-export interface OnboardingData {
+export interface ProfileDraft {
   fullName: string;
   trade: string;
   phone: string;
   slug: string;
-  payoutMethod: PayoutMethod;
-  bankName: string;
-  accountNumber: string;
-  accountType: AccountType | "";
-  cashsendPhone: string;
-  cashsendBank: string;
 }
 
-const INITIAL: OnboardingData = {
-  fullName: "",
-  trade: "",
-  phone: "",
-  slug: "",
-  payoutMethod: "bank",
-  bankName: "",
-  accountNumber: "",
-  accountType: "",
-  cashsendPhone: "",
-  cashsendBank: "",
-};
-
-interface Props {
+export interface OnboardingWizardProps {
   userId: string;
+  /** The number they signed in with. Saved as their WhatsApp number. */
+  phone: string;
 }
 
-export function OnboardingWizard({ userId }: Props) {
-  const [step, setStep] = useState(1);
-  const [data, setData] = useState<OnboardingData>(INITIAL);
+const STEPS = ["About you", "Getting paid"] as const;
 
-  function update(partial: Partial<OnboardingData>) {
-    setData((prev) => ({ ...prev, ...partial }));
-  }
+export function OnboardingWizard({ userId, phone }: OnboardingWizardProps) {
+  const [step, setStep] = useState<1 | 2>(1);
+  const [profile, setProfile] = useState<ProfileDraft>({
+    fullName: "",
+    trade: "",
+    phone,
+    slug: "",
+  });
+  // Most people receive CashSend on the number they signed up with.
+  const [payout, setPayout] = useState<PayoutDetails>({
+    ...EMPTY_PAYOUT,
+    cashsendPhone: phone ? formatSAPhone(phone) : "",
+  });
+  // Set when saving fails because the address was taken in the meantime.
+  const [slugError, setSlugError] = useState<string | null>(null);
 
   return (
-    <div>
-      <div className="flex justify-center gap-2 mb-6">
-        {[1, 2].map((n) => (
-          <div
-            key={n}
-            className={`h-2 rounded-full transition-all ${
-              step >= n ? "bg-emerald-600 w-6" : "bg-gray-200 w-2"
-            }`}
-          />
-        ))}
+    <div className="space-y-5">
+      <div>
+        <p className="text-sm font-medium text-muted">
+          Step {step} of {STEPS.length}: {STEPS[step - 1]}
+        </p>
+        <div className="mt-2 grid grid-cols-2 gap-1.5" aria-hidden="true">
+          {STEPS.map((label, index) => (
+            <span
+              key={label}
+              className={`h-1.5 rounded-full ${index < step ? "bg-jade" : "bg-line"}`}
+            />
+          ))}
+        </div>
       </div>
 
-      {step === 1 && (
-        <Step1Details data={data} onChange={update} onNext={() => setStep(2)} />
-      )}
-      {step === 2 && (
+      {step === 1 ? (
+        <Step1Details
+          value={profile}
+          onChange={setProfile}
+          externalSlugError={slugError}
+          onNext={() => {
+            setSlugError(null);
+            setStep(2);
+            window.scrollTo({ top: 0 });
+          }}
+        />
+      ) : (
         <Step2Payout
-          data={data}
-          onChange={update}
-          onBack={() => setStep(1)}
           userId={userId}
+          profile={profile}
+          value={payout}
+          onChange={setPayout}
+          onBack={() => setStep(1)}
+          onSlugTaken={() => {
+            setSlugError("Someone just took that address. Choose another one.");
+            setStep(1);
+          }}
         />
       )}
     </div>

@@ -31,8 +31,10 @@ export async function proxy(request: NextRequest) {
   return supabaseResponse;
 }
 
+// Skip the Supabase session refresh for static files: build assets, images,
+// the service worker, the manifest and the offline page.
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icon.svg|sitemap.xml|robots.txt|opengraph-image|sw.js|offline.html|manifest.webmanifest|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

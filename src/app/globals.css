@@ -1,2 +1,149 @@
 /* src/app/globals.css */
 @import "tailwindcss";
+
+/*
+ * PayLink brand tokens — from the PayLink Brand Kit design.
+ * Deep jade, warm cream, one apricot dot.
+ * Rough ratio on any screen: cream & white 60, jade 25, ink 10, apricot 5.
+ * Body text is always ink; never use grey lighter than `muted` for text
+ * (people read these screens in bright sun). QR codes stay black on white.
+ */
+@theme {
+  /* Fonts are wired up in layout.tsx with next/font. */
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+
+  /* Jade — primary: buttons, hero cards, frames */
+  --color-jade-900: #08261d; /* deepest, button bottom edge */
+  --color-jade-800: #0a3a2d; /* pressed */
+  --color-jade: #0e4d3c; /* primary (Jade 700) — white text 9.8:1 */
+  --color-jade-600: #1a6450; /* links, icons */
+  --color-mint: #dcebe4; /* selected, text on jade */
+  --color-mist: #eef5f1; /* icon tiles, light selected bg */
+
+  /* Apricot — the dot, highlights. Never used as text. */
+  --color-apricot: #ee9259;
+  --color-apricot-deep: #c8703c; /* apricot button bottom edge */
+  --color-apricot-soft: #fce6d6; /* avatars, tips */
+  --color-apricot-ink: #8a3d12; /* text on apricot-soft */
+
+  /* Neutrals */
+  --color-cream: #f7f3ea; /* page ground */
+  --color-sand: #ede8dc; /* segmented controls, tab strip */
+  --color-line: #e2ded3; /* borders */
+  --color-line-soft: #eeeae0; /* dividers inside cards */
+  --color-slot: #c9c3b4; /* dashed placeholder slots */
+  --color-muted: #4a5a52; /* secondary text — the lightest text colour allowed */
+  --color-ink: #11201a; /* text */
+
+  /* Status — each has text, soft background and dot */
+  --color-waiting: #8a5200;
+  --color-waiting-ink: #6b4000;
+  --color-waiting-soft: #fff0d1;
+  --color-waiting-dot: #e0a100;
+  --color-paid: #11663a;
+  --color-paid-soft: #ddf3e4;
+  --color-paid-dot: #1e8a4e;
+  --color-expired: #4f5560;
+  --color-expired-soft: #ecedef;
+  --color-expired-dot: #8a8f99;
+  --color-failed: #a51d1d;
+  --color-failed-soft: #fde5e3;
+  --color-failed-dot: #c42b2b;
+  --color-failed-deep: #8f1d1d;
+
+  --radius-4xl: 1.75rem; /* 28px hero cards */
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-cream font-sans text-ink antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+}
+
+/* Headings and the big amount: Bricolage, tracked tight. */
+@utility font-heading {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+/*
+ * The brand pattern: corners for large jade surfaces only.
+ * Never behind text people need to read.
+ */
+@utility brand-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cpath d='M7 15v-3a5 5 0 0 1 5-5h3M33 25v3a5 5 0 0 1-5 5h-3' fill='none' stroke='%23ffffff' stroke-opacity='0.08' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-size: 40px 40px;
+}
+
+/* Prose for the privacy policy and terms (LegalShell). */
+.legal h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-size: 1.625rem;
+  line-height: 1.2;
+  color: var(--color-ink);
+  margin-bottom: 0.75rem;
+}
+.legal h3 {
+  font-weight: 700;
+  font-size: 1.0625rem;
+  color: var(--color-ink);
+  margin: 1.25rem 0 0.5rem;
+}
+.legal p,
+.legal li {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--color-muted);
+}
+.legal p + p,
+.legal p + ul,
+.legal ul + p {
+  margin-top: 0.75rem;
+}
+.legal ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.legal li + li {
+  margin-top: 0.35rem;
+}
+.legal strong {
+  color: var(--color-ink);
+}
+.legal a {
+  color: var(--color-jade-600);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Printing / "Save as PDF": one clean A4 page, white paper, exact colours. */
+@media print {
+  @page {
+    size: A4;
+    margin: 18mm 16mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+  .receipt-doc {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    break-inside: avoid;
+  }
+}

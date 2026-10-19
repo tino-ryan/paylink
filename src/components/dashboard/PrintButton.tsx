@@ -1,12 +1,12 @@
+// src/components/dashboard/PrintButton.tsx
 "use client";
+
+import { Button } from "@/components/ui/Button";
 
 export function PrintButton() {
   return (
-    <button
-      onClick={() => window.print()}
-      className="w-full bg-emerald-600 text-white font-semibold py-4 rounded-xl hover:bg-emerald-700 transition-colors"
-    >
-      Print / Save as PDF
-    </button>
+    <Button variant="secondary" size="lg" fullWidth onClick={() => window.print()}>
+      Save as PDF or print
+    </Button>
   );
 }

@@ -11,6 +11,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { effectiveStatus } from "@/lib/utils";
 import type {
   AccountType,
+  PaidMethod,
   PaymentPageData,
   PayoutMethod,
   PublicProfile,
@@ -33,6 +34,9 @@ interface RequestRow {
   cashsend_reference: string | null;
   expires_at: string;
   customer_reported_paid_at: string | null;
+  paid_at: string | null;
+  receipt_number: number | null;
+  paid_method: PaidMethod | null;
   providers: {
     full_name: string;
     trade: string;
@@ -42,6 +46,8 @@ interface RequestRow {
     account_type: AccountType | null;
     cashsend_phone: string | null;
     cashsend_bank: string | null;
+    verified_at: string | null;
+    suspended_at: string | null;
   } | null;
 }
 
@@ -60,9 +66,9 @@ export async function getPaymentPage(
     .from("payment_requests")
     .select(
       `short_code, description, amount_cents, status, cashsend_reference,
-       expires_at, customer_reported_paid_at,
+       expires_at, customer_reported_paid_at, paid_at, receipt_number, paid_method,
        providers ( full_name, trade, payout_method, bank_name, account_number,
-                   account_type, cashsend_phone, cashsend_bank )`,
+                   account_type, cashsend_phone, cashsend_bank, verified_at, suspended_at )`,
     )
     .eq("short_code", code)
     .maybeSingle<RequestRow>();
@@ -71,6 +77,8 @@ export async function getPaymentPage(
     throw new Error(`getPaymentPage failed: ${error.message}`);
   }
   if (!data || !data.providers) return null;
+  // Suspended by PayLink (e.g. fraud): their links stop working.
+  if (data.providers.suspended_at !== null) return null;
 
   const status = effectiveStatus(data);
 
@@ -93,8 +101,22 @@ export async function getPaymentPage(
       cashsend_reference: data.cashsend_reference,
       expires_at: data.expires_at,
       customer_reported_paid_at: data.customer_reported_paid_at,
+      paid_at: data.paid_at,
+      receipt_number: data.receipt_number,
+      paid_method: data.paid_method,
     },
-    provider: data.providers,
+    // Only the fields the payment page shows (suspended_at stays server-side).
+    provider: {
+      full_name: data.providers.full_name,
+      trade: data.providers.trade,
+      payout_method: data.providers.payout_method,
+      bank_name: data.providers.bank_name,
+      account_number: data.providers.account_number,
+      account_type: data.providers.account_type,
+      cashsend_phone: data.providers.cashsend_phone,
+      cashsend_bank: data.providers.cashsend_bank,
+      verified_at: data.providers.verified_at,
+    },
   };
 }
 
@@ -107,8 +129,9 @@ export async function getPublicProfile(
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("providers")
-    .select("full_name, trade, slug")
+    .select("full_name, trade, slug, verified_at")
     .eq("slug", slug)
+    .is("suspended_at", null)
     .maybeSingle<PublicProfile>();
 
   if (error) {
