@@ -33,6 +33,17 @@ export default async function PayPage({ params }: Props) {
     />
   );
 
+  // Paid wins: if money arrived after a cancel and the provider confirmed it,
+  // the customer still gets their receipt.
+  if (request.status !== "paid" && request.cancelled_at) {
+    return (
+      <PublicMessage title="This payment was cancelled" icon="expired" context={summary}>
+        {firstName} cancelled this request on {formatDay(request.cancelled_at)}, so please
+        don&apos;t pay with this link. If you still owe {firstName}, ask for a new one.
+      </PublicMessage>
+    );
+  }
+
   if (request.status === "expired") {
     return (
       <PublicMessage title="This link has expired" icon="expired" context={summary}>

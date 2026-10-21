@@ -1,24 +1,12 @@
 // src/app/dashboard/new/page.tsx
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getMyProvider } from "@/lib/auth/session";
 import { NewRequestForm } from "@/components/dashboard/NewRequestForm";
 import { PageHeader } from "@/components/ui/Surface";
 
 export default async function NewRequestPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data, error } = await supabase
-    .from("providers")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (error) throw new Error(error.message);
-  if (!data) redirect("/onboarding");
+  const provider = await getMyProvider();
+  if (!provider) redirect("/onboarding");
 
   return (
     <div className="space-y-5">
@@ -28,7 +16,7 @@ export default async function NewRequestPage() {
         backHref="/dashboard"
         backLabel="Your jobs"
       />
-      <NewRequestForm providerId={(data as { id: string }).id} />
+      <NewRequestForm providerId={provider.id} />
     </div>
   );
 }

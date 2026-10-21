@@ -9,11 +9,13 @@ export interface StatusBadgeProps {
   customerReported?: boolean;
   /** Longer label, e.g. "Waiting for payment" on the job page. */
   long?: boolean;
+  /** Provider cancelled it (shown instead of "Expired"). */
+  cancelled?: boolean;
 }
 
 type Look = { label: string; longLabel: string; pill: string; dot: string };
 
-const LOOKS: Record<"paid" | "reported" | "expired" | "waiting", Look> = {
+const LOOKS: Record<"paid" | "reported" | "cancelled" | "expired" | "waiting", Look> = {
   paid: { label: "Paid", longLabel: "Paid", pill: "bg-paid-soft text-paid", dot: "" },
   reported: {
     label: "Check bank",
@@ -21,6 +23,7 @@ const LOOKS: Record<"paid" | "reported" | "expired" | "waiting", Look> = {
     pill: "bg-apricot-soft text-apricot-ink",
     dot: "bg-apricot",
   },
+  cancelled: { label: "Cancelled", longLabel: "You cancelled it", pill: "bg-expired-soft text-expired", dot: "bg-expired-dot" },
   expired: { label: "Expired", longLabel: "Link expired", pill: "bg-expired-soft text-expired", dot: "bg-expired-dot" },
   waiting: {
     label: "Waiting",
@@ -30,9 +33,22 @@ const LOOKS: Record<"paid" | "reported" | "expired" | "waiting", Look> = {
   },
 };
 
-export function StatusBadge({ status, customerReported = false, long = false }: StatusBadgeProps) {
+export function StatusBadge({
+  status,
+  customerReported = false,
+  long = false,
+  cancelled = false,
+}: StatusBadgeProps) {
   const key =
-    status === "paid" ? "paid" : customerReported ? "reported" : status === "expired" ? "expired" : "waiting";
+    status === "paid"
+      ? "paid"
+      : cancelled
+        ? "cancelled"
+        : customerReported
+          ? "reported"
+          : status === "expired"
+            ? "expired"
+            : "waiting";
   const look = LOOKS[key];
 
   return (

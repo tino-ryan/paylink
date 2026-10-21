@@ -1,6 +1,9 @@
 // src/app/dashboard/requests/[code]/page.tsx
+import { siteUrl } from "@/lib/site";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getMyProvider } from "@/lib/auth/session";
+import { CancelRequestButton } from "@/components/dashboard/CancelRequestButton";
 import { effectiveStatus, formatRand, formatReceiptNumber, PAID_METHOD_LABELS } from "@/lib/utils";
 import { ReceiptSender } from "@/components/dashboard/ReceiptSender";
 import { receiptUrl } from "@/lib/receipt";
@@ -27,6 +30,7 @@ type RequestDetail = Pick<
   | "created_by"
   | "receipt_number"
   | "paid_method"
+  | "cancelled_at"
 >;
 
 const formatDateTime = (iso: string) =>
@@ -40,17 +44,15 @@ const formatDateTime = (iso: string) =>
 
 export default async function RequestPage({ params }: Props) {
   const { code } = await params;
+  const provider = await getMyProvider(); // already fetched by the layout
+  if (!provider) redirect("/onboarding");
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
 
   // RLS only returns this user's rows, so another provider's code → 404.
   const { data, error } = await supabase
     .from("payment_requests")
     .select(
-      "description, amount_cents, status, short_code, expires_at, created_at, paid_at, customer_reported_paid_at, created_by, receipt_number, paid_method",
+      "description, amount_cents, status, short_code, expires_at, created_at, paid_at, customer_reported_paid_at, created_by, receipt_number, paid_method, cancelled_at",
     )
     .eq("short_code", code.toUpperCase())
     .maybeSingle();
@@ -58,20 +60,14 @@ export default async function RequestPage({ params }: Props) {
   if (error) throw new Error(error.message);
   if (!data) notFound();
 
-  const { data: providerData, error: providerError } = await supabase
-    .from("providers")
-    .select("full_name")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (providerError) throw new Error(providerError.message);
-  const providerName = (providerData as { full_name: string } | null)?.full_name ?? "";
+  const providerName = provider.full_name;
 
   const request = data as RequestDetail;
   const status = effectiveStatus(request);
-  const customerReported = status !== "paid" && request.customer_reported_paid_at !== null;
+  const cancelled = status !== "paid" && request.cancelled_at !== null;
+  const customerReported = status !== "paid" && !cancelled && request.customer_reported_paid_at !== null;
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (!appUrl) throw new Error("NEXT_PUBLIC_APP_URL is not set in .env.local");
+  const appUrl = siteUrl();
   const payUrl = `${appUrl}/pay/${request.short_code}`;
 
   const timeline: { label: string; at: string }[] = [
@@ -92,14 +88,18 @@ export default async function RequestPage({ params }: Props) {
           },
         ]
       : []),
-    ...(status === "expired" ? [{ label: "Link expired", at: request.expires_at }] : []),
+    ...(cancelled && request.cancelled_at
+      ? [{ label: "You cancelled it", at: request.cancelled_at }]
+      : status === "expired"
+        ? [{ label: "Link expired", at: request.expires_at }]
+        : []),
   ];
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
         <BackLink href="/dashboard" label="Your jobs" />
-        <StatusBadge status={status} customerReported={customerReported} long />
+        <StatusBadge status={status} customerReported={customerReported} cancelled={cancelled} long />
       </div>
 
       <header className="flex flex-col gap-1.5">
@@ -129,6 +129,8 @@ export default async function RequestPage({ params }: Props) {
           amountCents={request.amount_cents}
         />
       )}
+
+      {status === "pending" && <CancelRequestButton code={request.short_code} />}
 
       {status === "paid" && (
         <Card>
@@ -163,7 +165,14 @@ export default async function RequestPage({ params }: Props) {
         </Card>
       )}
 
-      {status === "expired" && !customerReported && (
+      {cancelled && request.cancelled_at && (
+        <Notice tone="warning">
+          You cancelled this on {formatDateTime(request.cancelled_at)}, so your customer can&apos;t
+          pay with it. If the money arrives anyway, you can still mark it paid above.
+        </Notice>
+      )}
+
+      {status === "expired" && !customerReported && !cancelled && (
         <Notice tone="warning">
           This link has expired, so your customer can&apos;t pay with it any more. Create a new
           request if they still owe you.

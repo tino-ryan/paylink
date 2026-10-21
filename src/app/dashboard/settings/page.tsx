@@ -1,10 +1,10 @@
 // src/app/dashboard/settings/page.tsx
+import { siteUrl } from "@/lib/site";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getMyProvider, getSessionUser } from "@/lib/auth/session";
 import { PushToggle } from "@/components/pwa/PushToggle";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { Card, CardTitle, PageHeader } from "@/components/ui/Surface";
-import type { Provider } from "@/lib/types";
 import { SettingsForm } from "./_components/settings-form";
 import { SignOutButton } from "./_components/sign-out-button";
 import { ChangePinForm } from "./_components/change-pin-form";
@@ -12,24 +12,13 @@ import { authEmailToPhone } from "@/lib/auth/pin";
 import { formatSAPhone } from "@/lib/validation";
 
 export default async function SettingsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/login");
-
-  const { data, error } = await supabase
-    .from("providers")
-    .select("*")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (error) throw new Error(error.message);
-  if (!data) redirect("/onboarding");
-  const provider = data as Provider;
+  const provider = await getMyProvider();
+  if (!provider) redirect("/onboarding");
 
   const signInPhone = authEmailToPhone(user.email);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  const appUrl = siteUrl();
   const profileUrl = `${appUrl}/${provider.slug}`;
 
   return (

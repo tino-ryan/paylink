@@ -76,6 +76,7 @@ export function NewRequestForm({ providerId }: NewRequestFormProps) {
 
       if (!error) {
         router.push(`/dashboard/requests/${shortCode}`);
+        router.refresh(); // drop the cached jobs list so it shows this link
         return;
       }
       if (error.code !== UNIQUE_VIOLATION) break;

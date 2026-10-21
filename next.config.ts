@@ -10,6 +10,13 @@ const nextConfig: NextConfig = {
   turbopack: { root: projectRoot },
   outputFileTracingRoot: projectRoot,
 
+  experimental: {
+    // Keep pages the phone has already loaded (or prefetched from the bottom
+    // nav) for 30 seconds, so switching tabs is instant instead of a fresh
+    // server round trip each time. Saving anything clears this early.
+    staleTimes: { dynamic: 30, static: 60 },
+  },
+
   async headers() {
     return [
       {

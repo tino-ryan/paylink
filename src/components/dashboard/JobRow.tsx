@@ -15,6 +15,7 @@ export type JobListItem = Pick<
   | "expires_at"
   | "created_at"
   | "customer_reported_paid_at"
+  | "cancelled_at"
 >;
 
 const formatDay = (iso: string) =>
@@ -26,7 +27,8 @@ const formatDay = (iso: string) =>
 
 export function JobRow({ job }: { job: JobListItem }) {
   const status = effectiveStatus(job);
-  const reported = status !== "paid" && job.customer_reported_paid_at !== null;
+  const cancelled = status !== "paid" && job.cancelled_at !== null;
+  const reported = status !== "paid" && !cancelled && job.customer_reported_paid_at !== null;
 
   return (
     <li>
@@ -48,7 +50,7 @@ export function JobRow({ job }: { job: JobListItem }) {
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
           <Money cents={job.amount_cents} size="sm" className="text-ink" />
-          <StatusBadge status={status} customerReported={reported} />
+          <StatusBadge status={status} customerReported={reported} cancelled={cancelled} />
         </div>
       </Link>
     </li>

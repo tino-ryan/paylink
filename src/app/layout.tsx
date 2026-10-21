@@ -1,4 +1,5 @@
 // src/app/layout.tsx
+import { siteUrl } from "@/lib/site";
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
@@ -21,7 +22,7 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   // Absolute URLs for link previews (WhatsApp reads og:image).
-  metadataBase: process.env.NEXT_PUBLIC_APP_URL ? new URL(process.env.NEXT_PUBLIC_APP_URL) : undefined,
+  metadataBase: new URL(siteUrl()),
   title: "PayLink — Get paid instantly",
   description: "Payment links for South African service providers",
   applicationName: "PayLink",

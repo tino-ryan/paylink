@@ -35,10 +35,19 @@ export function supportWhatsAppUrl(
     : null;
 }
 
-/** Absolute site URL without a trailing slash. */
+/**
+ * Absolute site URL without a trailing slash, e.g. "https://paylink.co.za".
+ * Server-only (every caller is a Server Component or route). In order:
+ *  1. APP_URL: set this in Vercel / .env.local. Not NEXT_PUBLIC_: the browser
+ *     never needs it, so Vercel doesn't warn about it.
+ *  2. NEXT_PUBLIC_APP_URL: the old name, still honoured.
+ *  3. VERCEL_PROJECT_PRODUCTION_URL: set automatically by Vercel, so a deploy
+ *     works even if you forget 1.
+ *  4. localhost for local development.
+ */
 export function siteUrl(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(
-    /\/$/,
-    "",
-  );
+  const configured = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  const url = configured || (vercel ? `https://${vercel}` : "http://localhost:3000");
+  return url.trim().replace(/\/$/, "");
 }

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { siteUrl } from "@/lib/site";
 import { authEmailToPhone } from "@/lib/auth/pin";
 import { effectiveStatus, formatRand, PAID_METHOD_LABELS } from "@/lib/utils";
 import { formatSAPhone } from "@/lib/validation";
@@ -39,6 +40,7 @@ type Job = Pick<
   | "created_at"
   | "customer_reported_paid_at"
   | "paid_method"
+  | "cancelled_at"
 >;
 
 export default async function AdminProviderPage({ params }: Props) {
@@ -55,7 +57,7 @@ export default async function AdminProviderPage({ params }: Props) {
     db.auth.admin.getUserById(provider.user_id),
     db
       .from("payment_requests")
-      .select("short_code, description, amount_cents, status, expires_at, created_at, customer_reported_paid_at, paid_method")
+      .select("short_code, description, amount_cents, status, expires_at, created_at, customer_reported_paid_at, paid_method, cancelled_at")
       .eq("provider_id", id)
       .order("created_at", { ascending: false })
       .limit(50),
@@ -73,7 +75,7 @@ export default async function AdminProviderPage({ params }: Props) {
   const lockedUntil = (attempt as { locked_until: string | null } | null)?.locked_until ?? null;
   const locked = lockedUntil !== null && new Date(lockedUntil).getTime() > Date.now();
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  const appUrl = siteUrl();
 
   const details: { label: string; value: string | null }[] = [
     { label: "Sign-in number", value: signInPhone ? formatSAPhone(signInPhone) : "Email account (old)" },
@@ -171,6 +173,7 @@ export default async function AdminProviderPage({ params }: Props) {
                     <StatusBadge
                       status={status}
                       customerReported={status !== "paid" && job.customer_reported_paid_at !== null}
+                      cancelled={status !== "paid" && job.cancelled_at !== null}
                     />
                   </span>
                 </li>

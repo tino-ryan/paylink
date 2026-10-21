@@ -42,6 +42,8 @@ export interface PaymentRequest {
   created_at: string;
   paid_at: string | null;
   customer_reported_paid_at: string | null;
+  /** Set when the provider cancels (status also becomes "expired"). */
+  cancelled_at: string | null;
   created_by: RequestCreatedBy;
   /** Per-provider running number, set by the database when paid. */
   receipt_number: number | null;
@@ -87,6 +89,7 @@ export type PublicRequest = Pick<
   | "paid_at"
   | "receipt_number"
   | "paid_method"
+  | "cancelled_at"
 >;
 
 export interface PaymentPageData {

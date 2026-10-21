@@ -89,6 +89,7 @@ export function BottomNav() {
             <li key={item.href}>
               <Link
                 href={item.href}
+                prefetch
                 aria-current={active ? "page" : undefined}
                 className={`relative flex min-h-16 flex-col items-center justify-center gap-0.5 text-[13px] font-bold focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-jade-600 ${
                   active ? "text-jade" : "text-muted"

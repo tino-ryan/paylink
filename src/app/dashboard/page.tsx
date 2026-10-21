@@ -1,6 +1,7 @@
 // src/app/dashboard/page.tsx
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getMyProvider } from "@/lib/auth/session";
 import { startOfMonthSAST } from "@/lib/utils";
 import { LinkButton } from "@/components/ui/Button";
 import { Card, Money, MoneyHero, Notice, SectionTitle } from "@/components/ui/Surface";
@@ -9,33 +10,13 @@ import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { PushToggle } from "@/components/pwa/PushToggle";
 
 const JOB_COLUMNS =
-  "id, description, amount_cents, status, short_code, expires_at, created_at, customer_reported_paid_at";
+  "id, description, amount_cents, status, short_code, expires_at, created_at, customer_reported_paid_at, cancelled_at";
 
 export default async function DashboardPage() {
+  const provider = await getMyProvider(); // already fetched by the layout
+  if (!provider) redirect("/onboarding");
+  const { id: providerId, full_name: providerName, payout_changed_at: payoutChangedAt } = provider;
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: providerRow, error: providerError } = await supabase
-    .from("providers")
-    .select("id, full_name, payout_changed_at")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (providerError) throw new Error(providerError.message);
-  if (!providerRow) redirect("/onboarding");
-  const {
-    id: providerId,
-    full_name: providerName,
-    payout_changed_at: payoutChangedAt,
-  } = providerRow as {
-    id: string;
-    full_name: string;
-    payout_changed_at: string | null;
-  };
 
   // Warn for a week after payment details change, in case it wasn't them.
   const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -60,6 +41,7 @@ export default async function DashboardPage() {
       .select(JOB_COLUMNS)
       .eq("provider_id", providerId)
       .in("status", ["pending", "expired"])
+      .is("cancelled_at", null)
       .not("customer_reported_paid_at", "is", null)
       .order("customer_reported_paid_at", { ascending: false })
       .limit(10),

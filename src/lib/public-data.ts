@@ -34,6 +34,7 @@ interface RequestRow {
   cashsend_reference: string | null;
   expires_at: string;
   customer_reported_paid_at: string | null;
+  cancelled_at: string | null;
   paid_at: string | null;
   receipt_number: number | null;
   paid_method: PaidMethod | null;
@@ -66,7 +67,7 @@ export async function getPaymentPage(
     .from("payment_requests")
     .select(
       `short_code, description, amount_cents, status, cashsend_reference,
-       expires_at, customer_reported_paid_at, paid_at, receipt_number, paid_method,
+       expires_at, customer_reported_paid_at, cancelled_at, paid_at, receipt_number, paid_method,
        providers ( full_name, trade, payout_method, bank_name, account_number,
                    account_type, cashsend_phone, cashsend_bank, verified_at, suspended_at )`,
     )
@@ -101,6 +102,7 @@ export async function getPaymentPage(
       cashsend_reference: data.cashsend_reference,
       expires_at: data.expires_at,
       customer_reported_paid_at: data.customer_reported_paid_at,
+      cancelled_at: data.cancelled_at,
       paid_at: data.paid_at,
       receipt_number: data.receipt_number,
       paid_method: data.paid_method,

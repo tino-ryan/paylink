@@ -1,6 +1,7 @@
 // src/app/dashboard/charge/actions.ts
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import {
   effectiveStatus,
@@ -28,6 +29,11 @@ async function providerSession() {
   return { supabase, providerId: (data as { id: string }).id };
 }
 
+/** Clears the phone's cached copy of the dashboard so the jobs list is fresh. */
+function refreshDashboard() {
+  revalidatePath("/dashboard", "layout");
+}
+
 /** Create a payment request for a customer standing in front of you. */
 export async function createCharge(
   amountCents: number,
@@ -53,7 +59,10 @@ export async function createCharge(
       short_code: shortCode,
       cashsend_reference: generateCashSendReference(cleanDescription, shortCode),
     });
-    if (!error) return { ok: true, data: { shortCode } };
+    if (!error) {
+      refreshDashboard();
+      return { ok: true, data: { shortCode } };
+    }
     if (error.code !== UNIQUE_VIOLATION) break;
   }
   return { ok: false, error: "Couldn't create the QR code. Check your signal and try again." };
@@ -133,6 +142,7 @@ export async function markChargePaid(
   if (error) return { ok: false, error: "Couldn't save that. Check your signal and try again." };
 
   if (data) {
+    refreshDashboard();
     const row = data as { receipt_number: number | null; paid_at: string | null; paid_method: PaidMethod | null };
     return { ok: true, data: { receiptNumber: row.receipt_number, paidAt: row.paid_at, paidMethod: row.paid_method } };
   }
@@ -160,11 +170,13 @@ export async function cancelCharge(code: string): Promise<ActionResult> {
   const session = await providerSession();
   if (!session) return { ok: false, error: "Please sign in again." };
 
+  const now = new Date().toISOString();
   const { error } = await session.supabase
     .from("payment_requests")
-    .update({ status: "expired", expires_at: new Date().toISOString() })
+    .update({ status: "expired", expires_at: now, cancelled_at: now })
     .eq("short_code", code)
     .eq("status", "pending");
   if (error) return { ok: false, error: "Couldn't cancel. Check your signal and try again." };
+  refreshDashboard();
   return { ok: true, data: undefined };
 }
