@@ -82,12 +82,16 @@ export default async function AdminProviderPage({ params }: Props) {
     { label: "Profile link", value: `${appUrl.replace(/^https?:\/\//, "")}/${provider.slug}` },
     { label: "Joined", value: formatWhen(provider.created_at) },
     { label: "Last sign-in", value: lastSignIn ? formatWhen(lastSignIn) : "Never" },
-    { label: "Bank", value: provider.bank_name ? `${provider.bank_name}, ${maskAccount(provider.account_number)}` : null },
+    {
+      label: "Bank",
+      value: provider.bank_name
+        ? `${provider.bank_name}, ${maskAccount(provider.account_number)}${provider.branch_code ? `, branch ${provider.branch_code}` : ""}`
+        : null,
+    },
+    { label: "Account holder", value: provider.account_holder },
     {
       label: "CashSend",
-      value: provider.cashsend_phone
-        ? `${formatSAPhone(provider.cashsend_phone)} (${provider.cashsend_bank ?? "bank not set"})`
-        : null,
+      value: provider.cashsend_phone ? formatSAPhone(provider.cashsend_phone) : null,
     },
     {
       label: "Payment details changed",

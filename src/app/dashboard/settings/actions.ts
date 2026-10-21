@@ -4,7 +4,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { authEmailToPhone, pinToPassword, signInWithPin } from "@/lib/auth/pin";
-import { payoutToColumns, validatePayout, type PayoutColumns, type PayoutDetails } from "@/lib/payout";
+import { PAYOUT_KEYS, payoutToColumns, validatePayout, type PayoutDetails } from "@/lib/payout";
 import { validateFullName, validateNewPin, validatePin } from "@/lib/validation";
 import type { ActionResult, Provider } from "@/lib/types";
 
@@ -20,14 +20,6 @@ export type SaveSettingsResult =
   | { ok: true; data: { payoutChanged: boolean } }
   | { ok: false; error: string; needsPin?: boolean };
 
-const PAYOUT_KEYS: (keyof PayoutColumns)[] = [
-  "payout_method",
-  "bank_name",
-  "account_number",
-  "account_type",
-  "cashsend_phone",
-  "cashsend_bank",
-];
 
 async function currentUserAndProvider() {
   const supabase = await createClient();

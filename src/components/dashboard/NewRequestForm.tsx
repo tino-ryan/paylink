@@ -13,6 +13,7 @@ import {
   parseRandInput,
   UNIQUE_VIOLATION,
 } from "@/lib/utils";
+import { cleanPhoneInput, normalizeSAPhone, PHONE_INPUT_MAX } from "@/lib/validation";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/Field";
 import { Notice } from "@/components/ui/Surface";
@@ -28,6 +29,7 @@ const MAX_DESCRIPTION = 100;
 interface Errors {
   description?: string;
   amount?: string;
+  customerPhone?: string;
   form?: string;
 }
 
@@ -46,6 +48,8 @@ export function NewRequestForm({ providerId }: NewRequestFormProps) {
 
   const [description, setDescription] = useState("");
   const [amountInput, setAmountInput] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [errors, setErrors] = useState<Errors>({});
   const [loading, setLoading] = useState(false);
 
@@ -56,6 +60,10 @@ export function NewRequestForm({ providerId }: NewRequestFormProps) {
     e.preventDefault();
 
     const found = validate(description, amountCents, amountInput);
+    const savedPhone = customerPhone.trim() ? normalizeSAPhone(customerPhone) : null;
+    if (customerPhone.trim() && !savedPhone) {
+      found.customerPhone = "That doesn't look like a SA cellphone number. Try 071 234 5678.";
+    }
     setErrors(found);
     if (Object.keys(found).length > 0 || amountCents === null) return;
 
@@ -72,6 +80,8 @@ export function NewRequestForm({ providerId }: NewRequestFormProps) {
         amount_cents: amountCents,
         short_code: shortCode,
         cashsend_reference: generateCashSendReference(cleanDescription, shortCode),
+        customer_name: customerName.trim().replace(/\s+/g, " ") || null,
+        customer_phone: savedPhone,
       });
 
       if (!error) {
@@ -155,6 +165,41 @@ export function NewRequestForm({ providerId }: NewRequestFormProps) {
         error={errors.description}
         hint="Your customer sees this on the payment page."
       />
+
+      <fieldset className="flex flex-col gap-3 rounded-3xl bg-white p-4">
+        <legend className="sr-only">Customer (optional)</legend>
+        <p className="text-[15px] font-semibold text-ink">
+          Customer <span className="font-normal text-muted">(optional)</span>
+        </p>
+        <p className="-mt-2 text-sm text-muted">
+          Save who it&apos;s for, and the link can go straight to their WhatsApp. Only you see this.
+        </p>
+        <TextField
+          id="customer-name"
+          label="Name"
+          value={customerName}
+          onChange={(e) => setCustomerName(e.target.value)}
+          placeholder="Sipho"
+          maxLength={80}
+          autoComplete="off"
+          autoCapitalize="words"
+        />
+        <TextField
+          id="customer-phone"
+          label="WhatsApp number"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
+          value={customerPhone}
+          maxLength={PHONE_INPUT_MAX}
+          onChange={(e) => {
+            setCustomerPhone(cleanPhoneInput(e.target.value));
+            if (errors.customerPhone) setErrors({ ...errors, customerPhone: undefined });
+          }}
+          placeholder="071 234 5678"
+          error={errors.customerPhone}
+        />
+      </fieldset>
 
       {errors.form && <Notice tone="error">{errors.form}</Notice>}
 

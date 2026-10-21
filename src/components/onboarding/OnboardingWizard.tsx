@@ -61,6 +61,10 @@ export function OnboardingWizard({ userId, phone }: OnboardingWizardProps) {
           externalSlugError={slugError}
           onNext={() => {
             setSlugError(null);
+            // Most people's bank account is in their own name: start with that.
+            setPayout((current) =>
+              current.accountHolder ? current : { ...current, accountHolder: profile.fullName.trim() },
+            );
             setStep(2);
             window.scrollTo({ top: 0 });
           }}

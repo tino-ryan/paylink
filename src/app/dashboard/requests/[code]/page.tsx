@@ -7,6 +7,7 @@ import { CancelRequestButton } from "@/components/dashboard/CancelRequestButton"
 import { effectiveStatus, formatRand, formatReceiptNumber, PAID_METHOD_LABELS } from "@/lib/utils";
 import { ReceiptSender } from "@/components/dashboard/ReceiptSender";
 import { receiptUrl } from "@/lib/receipt";
+import { formatSAPhone } from "@/lib/validation";
 import { SharePanel } from "@/components/dashboard/SharePanel";
 import { MarkPaidButton } from "@/components/dashboard/MarkPaidButton";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
@@ -31,6 +32,8 @@ type RequestDetail = Pick<
   | "receipt_number"
   | "paid_method"
   | "cancelled_at"
+  | "customer_name"
+  | "customer_phone"
 >;
 
 const formatDateTime = (iso: string) =>
@@ -52,7 +55,7 @@ export default async function RequestPage({ params }: Props) {
   const { data, error } = await supabase
     .from("payment_requests")
     .select(
-      "description, amount_cents, status, short_code, expires_at, created_at, paid_at, customer_reported_paid_at, created_by, receipt_number, paid_method, cancelled_at",
+      "description, amount_cents, status, short_code, expires_at, created_at, paid_at, customer_reported_paid_at, created_by, receipt_number, paid_method, cancelled_at, customer_name, customer_phone",
     )
     .eq("short_code", code.toUpperCase())
     .maybeSingle();
@@ -112,13 +115,24 @@ export default async function RequestPage({ params }: Props) {
           {status === "pending" && <>, works until {formatDateTime(request.expires_at)}</>}
         </p>
         <MoneyHero cents={request.amount_cents} size={52} className="mt-1 text-ink" centsClassName="text-muted" />
+        {(request.customer_name || request.customer_phone) && (
+          <p className="text-[15px] text-muted">
+            Customer:{" "}
+            <span className="font-semibold text-ink">
+              {[request.customer_name, request.customer_phone && formatSAPhone(request.customer_phone)]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+          </p>
+        )}
       </header>
 
       {customerReported && request.customer_reported_paid_at && (
         <Notice tone="info">
-          Your customer says they sent the money on{" "}
-          {formatDateTime(request.customer_reported_paid_at)}. Check your bank or CashSend SMS
-          before you mark it paid.
+          {request.customer_name?.split(" ")[0] ?? "Your customer"} says they sent the money on{" "}
+          {formatDateTime(request.customer_reported_paid_at)}. They may also send proof of payment
+          or a CashSend voucher on WhatsApp. Screenshots can be faked, so check your bank or
+          CashSend SMS before you mark it paid.
         </Notice>
       )}
 
@@ -127,6 +141,7 @@ export default async function RequestPage({ params }: Props) {
           payUrl={payUrl}
           description={request.description}
           amountCents={request.amount_cents}
+          customer={{ name: request.customer_name, phone: request.customer_phone }}
         />
       )}
 
@@ -152,6 +167,7 @@ export default async function RequestPage({ params }: Props) {
               paidMethod: request.paid_method,
               providerName,
             }}
+            customer={{ name: request.customer_name, phone: request.customer_phone }}
           />
         </Card>
       )}

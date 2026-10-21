@@ -1,8 +1,8 @@
 // src/components/forms/PayoutDetailsFields.tsx
 "use client";
 
-import { BANKS, CASHSEND_BANKS } from "@/lib/constants";
-import type { PayoutDetails, PayoutErrors } from "@/lib/payout";
+import { BANKS } from "@/lib/constants";
+import { defaultBranchCode, type PayoutDetails, type PayoutErrors } from "@/lib/payout";
 import type { AccountType } from "@/lib/types";
 import { cleanPhoneInput, PHONE_INPUT_MAX } from "@/lib/validation";
 import { CheckboxCard, ChoiceGroup, SelectField, TextField } from "@/components/ui/Field";
@@ -40,8 +40,25 @@ export function PayoutDetailsFields({ value, errors, onChange }: PayoutDetailsFi
               placeholder="Choose your bank"
               options={BANKS}
               value={value.bankName}
-              onChange={(e) => set({ bankName: e.target.value })}
+              onChange={(e) => {
+                const bankName = e.target.value;
+                // Swap in the new bank's universal code, unless they typed their own.
+                const autoFilled =
+                  value.branchCode === "" || value.branchCode === defaultBranchCode(value.bankName);
+                set({ bankName, ...(autoFilled ? { branchCode: defaultBranchCode(bankName) } : {}) });
+              }}
               error={errors.bankName}
+            />
+            <TextField
+              id="account-holder"
+              label="Account holder"
+              value={value.accountHolder}
+              onChange={(e) => set({ accountHolder: e.target.value })}
+              autoComplete="name"
+              maxLength={80}
+              placeholder="Name on the account"
+              hint="Exactly as your bank shows it, e.g. T Mokoena or Thandi's Hair Studio."
+              error={errors.accountHolder}
             />
             <TextField
               id="account-number"
@@ -53,6 +70,23 @@ export function PayoutDetailsFields({ value, errors, onChange }: PayoutDetailsFi
               placeholder="1234567890"
               className="tabular-nums"
               error={errors.accountNumber}
+            />
+            <TextField
+              id="branch-code"
+              label="Branch code"
+              value={value.branchCode}
+              onChange={(e) => set({ branchCode: e.target.value.replace(/\D/g, "").slice(0, 6) })}
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={6}
+              placeholder="250655"
+              className="tabular-nums"
+              hint={
+                defaultBranchCode(value.bankName) && value.branchCode === defaultBranchCode(value.bankName)
+                  ? `${value.bankName}'s universal code, which works for every branch.`
+                  : "6 digits. Most banks use one code for every branch."
+              }
+              error={errors.branchCode}
             />
             <ChoiceGroup<AccountType>
               name="account-type"
@@ -72,7 +106,7 @@ export function PayoutDetailsFields({ value, errors, onChange }: PayoutDetailsFi
           checked={value.acceptsCashSend}
           onChange={(checked) => set({ acceptsCashSend: checked })}
           title="CashSend"
-          description="Customers send money to your cellphone number. You withdraw it at an ATM."
+          description="Customers send cash to your cellphone from their banking app. They give you the voucher number and PIN, and you draw it at an ATM. No bank account needed."
         />
         {value.acceptsCashSend && (
           <div className="space-y-4 rounded-2xl bg-cream p-4">
@@ -87,16 +121,6 @@ export function PayoutDetailsFields({ value, errors, onChange }: PayoutDetailsFi
               onChange={(e) => set({ cashsendPhone: cleanPhoneInput(e.target.value) })}
               placeholder="071 234 5678"
               error={errors.cashsendPhone}
-            />
-            <SelectField
-              id="cashsend-bank"
-              label="Bank for this number"
-              placeholder="Choose a bank"
-              options={CASHSEND_BANKS}
-              value={value.cashsendBank}
-              onChange={(e) => set({ cashsendBank: e.target.value })}
-              error={errors.cashsendBank}
-              hint="Only these banks support CashSend withdrawals."
             />
           </div>
         )}

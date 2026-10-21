@@ -42,8 +42,8 @@ const sections: LegalSection[] = [
           <li>Your PIN, stored only in a scrambled (hashed) form we can&apos;t read back.</li>
           <li>Your name, trade and the short name used in your pay page link.</li>
           <li>
-            Your payout details: bank name, account number and account type, and/or your CashSend
-            number and bank.
+            Your payout details: bank name, account holder, account number, branch code and
+            account type, and/or your CashSend number.
           </li>
           <li>
             The jobs you create: description, amount, reference, status, payment method and
@@ -59,8 +59,16 @@ const sections: LegalSection[] = [
         <p>
           Customers don&apos;t need an account. When you open a payment page we record only that
           the page was used, and the time you tapped &ldquo;I&apos;ve sent the money&rdquo; if you
-          do. We don&apos;t ask for your name, card or bank details. Your payment happens in your
-          own banking app, not on {SITE.name}.
+          do. We don&apos;t ask for your card or bank details. Your payment happens in your own
+          banking app, not on {SITE.name}.
+        </p>
+        <p>
+          The provider you&apos;re paying may choose to save your name and WhatsApp number with
+          their job, so they can send you the link and your receipt. Only that provider can see
+          them (and {SITE.name} staff when helping with a problem). Your name appears on your
+          receipt; your number is never shown to anyone else. Proof of payment and CashSend
+          vouchers you send the provider go through WhatsApp, not {SITE.name}: we never see or
+          store them.
         </p>
         <h3>Automatically</h3>
         <p>
@@ -108,7 +116,8 @@ const sections: LegalSection[] = [
           <li>
             <strong>Your customers</strong> see your name, trade, the job and amount, and the payout
             details needed to pay you (bank account or CashSend number) when you share a link or
-            QR code with them. Please only share links with people you&apos;re asking to pay you.
+            QR code with them, plus your WhatsApp number so they can send you proof of payment.
+            Please only share links with people you&apos;re asking to pay you.
           </li>
           <li>
             <strong>{SITE.name} staff</strong> can see account details to verify providers, help

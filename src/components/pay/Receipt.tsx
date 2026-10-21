@@ -34,6 +34,7 @@ export function Receipt({ provider, request }: ReceiptProps) {
   const rows: { label: string; value: string }[] = [
     { label: "Receipt no.", value: receiptNo },
     ...(request.paid_at ? [{ label: "Paid on", value: formatDateTime(request.paid_at) }] : []),
+    ...(request.customer_name ? [{ label: "Received from", value: request.customer_name }] : []),
     { label: "For", value: request.description },
     ...(request.paid_method
       ? [{ label: "Paid by", value: PAID_METHOD_LABELS[request.paid_method] }]

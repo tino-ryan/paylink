@@ -10,7 +10,7 @@ import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { PushToggle } from "@/components/pwa/PushToggle";
 
 const JOB_COLUMNS =
-  "id, description, amount_cents, status, short_code, expires_at, created_at, customer_reported_paid_at, cancelled_at";
+  "id, description, amount_cents, status, short_code, expires_at, created_at, customer_reported_paid_at, cancelled_at, customer_name";
 
 export default async function DashboardPage() {
   const provider = await getMyProvider(); // already fetched by the layout

@@ -1,8 +1,10 @@
 // next.config.ts
-import path from "node:path";
 import type { NextConfig } from "next";
 
-const projectRoot = path.join(__dirname);
+// The folder holding package.json. npm always runs scripts from here (and so
+// does Vercel), so this is more reliable than __dirname, which can point
+// elsewhere when Next compiles this file.
+const projectRoot = process.cwd();
 
 const nextConfig: NextConfig = {
   // Pin the project root. A stray package-lock.json in the home folder made

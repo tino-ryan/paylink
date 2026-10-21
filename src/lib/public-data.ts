@@ -35,6 +35,7 @@ interface RequestRow {
   expires_at: string;
   customer_reported_paid_at: string | null;
   cancelled_at: string | null;
+  customer_name: string | null;
   paid_at: string | null;
   receipt_number: number | null;
   paid_method: PaidMethod | null;
@@ -46,7 +47,9 @@ interface RequestRow {
     account_number: string | null;
     account_type: AccountType | null;
     cashsend_phone: string | null;
-    cashsend_bank: string | null;
+    account_holder: string | null;
+    branch_code: string | null;
+    phone: string | null;
     verified_at: string | null;
     suspended_at: string | null;
   } | null;
@@ -67,9 +70,10 @@ export async function getPaymentPage(
     .from("payment_requests")
     .select(
       `short_code, description, amount_cents, status, cashsend_reference,
-       expires_at, customer_reported_paid_at, cancelled_at, paid_at, receipt_number, paid_method,
+       expires_at, customer_reported_paid_at, cancelled_at, customer_name, paid_at, receipt_number, paid_method,
        providers ( full_name, trade, payout_method, bank_name, account_number,
-                   account_type, cashsend_phone, cashsend_bank, verified_at, suspended_at )`,
+                   account_type, account_holder, branch_code, cashsend_phone, phone,
+                   verified_at, suspended_at )`,
     )
     .eq("short_code", code)
     .maybeSingle<RequestRow>();
@@ -103,6 +107,8 @@ export async function getPaymentPage(
       expires_at: data.expires_at,
       customer_reported_paid_at: data.customer_reported_paid_at,
       cancelled_at: data.cancelled_at,
+      // Shown on the customer's own receipt. The phone number is never exposed.
+      customer_name: data.customer_name,
       paid_at: data.paid_at,
       receipt_number: data.receipt_number,
       paid_method: data.paid_method,
@@ -116,7 +122,10 @@ export async function getPaymentPage(
       account_number: data.providers.account_number,
       account_type: data.providers.account_type,
       cashsend_phone: data.providers.cashsend_phone,
-      cashsend_bank: data.providers.cashsend_bank,
+      account_holder: data.providers.account_holder,
+      branch_code: data.providers.branch_code,
+      // For proof of payment and CashSend PINs; falls back to the CashSend number.
+      whatsapp: data.providers.phone ?? data.providers.cashsend_phone,
       verified_at: data.providers.verified_at,
     },
   };

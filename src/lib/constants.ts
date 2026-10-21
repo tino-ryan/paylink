@@ -32,8 +32,20 @@ export const BANKS = [
   "Other",
 ] as const;
 
-/** Banks whose customers can withdraw a CashSend-style payment at an ATM. */
-export const CASHSEND_BANKS = ["ABSA", "FNB", "Nedbank", "Standard Bank"] as const;
+/**
+ * Universal branch codes: one code that works for every branch of the bank.
+ * Prefilled when a provider picks their bank; they can change it.
+ */
+export const BANK_BRANCH_CODES: Record<string, string> = {
+  ABSA: "632005",
+  "African Bank": "430000",
+  Capitec: "470010",
+  "Discovery Bank": "679000",
+  FNB: "250655",
+  Nedbank: "198765",
+  "Standard Bank": "051001",
+  TymeBank: "678910",
+};
 
 /**
  * Words that can't be used as a profile link, because a page already lives at

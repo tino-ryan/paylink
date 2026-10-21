@@ -16,6 +16,7 @@ export type JobListItem = Pick<
   | "created_at"
   | "customer_reported_paid_at"
   | "cancelled_at"
+  | "customer_name"
 >;
 
 const formatDay = (iso: string) =>
@@ -45,7 +46,7 @@ export function JobRow({ job }: { job: JobListItem }) {
         <div className="min-w-0 flex-1">
           <p className="truncate text-base font-bold text-ink">{job.description}</p>
           <p className="mt-0.5 text-sm text-muted">
-            {formatDay(job.created_at)} · {job.short_code}
+            {formatDay(job.created_at)} · {job.customer_name ?? job.short_code}
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">

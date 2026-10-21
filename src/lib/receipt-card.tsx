@@ -42,6 +42,7 @@ function rowsFor({ request }: PaymentPageData) {
   return [
     { label: "Receipt no.", value: receiptLabel({ receiptNumber: request.receipt_number, code: request.short_code }) },
     ...(request.paid_at ? [{ label: "Paid on", value: formatReceiptDate(request.paid_at) }] : []),
+    ...(request.customer_name ? [{ label: "Received from", value: truncate(request.customer_name, 30) }] : []),
     { label: "For", value: truncate(request.description, 34) },
     ...(request.paid_method ? [{ label: "Paid by", value: PAID_METHOD_LABELS[request.paid_method] }] : []),
     { label: "Reference", value: request.cashsend_reference ?? request.short_code },

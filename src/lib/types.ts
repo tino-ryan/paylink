@@ -19,6 +19,10 @@ export interface Provider {
   bank_name: string | null;
   account_number: string | null;
   account_type: AccountType | null;
+  /** Name on the bank account (may differ from full_name, e.g. a business). */
+  account_holder: string | null;
+  /** 6-digit branch code, usually the bank's universal code. */
+  branch_code: string | null;
   cashsend_phone: string | null;
   cashsend_bank: string | null;
   created_at: string;
@@ -44,6 +48,10 @@ export interface PaymentRequest {
   customer_reported_paid_at: string | null;
   /** Set when the provider cancels (status also becomes "expired"). */
   cancelled_at: string | null;
+  /** Optional, saved by the provider. Shown on the customer's receipt. */
+  customer_name: string | null;
+  /** Optional, saved by the provider. Never shown publicly. */
+  customer_phone: string | null;
   created_by: RequestCreatedBy;
   /** Per-provider running number, set by the database when paid. */
   receipt_number: number | null;
@@ -72,10 +80,14 @@ export type PublicPayoutDetails = Pick<
   | "bank_name"
   | "account_number"
   | "account_type"
+  | "account_holder"
+  | "branch_code"
   | "cashsend_phone"
-  | "cashsend_bank"
   | "verified_at"
->;
+> & {
+  /** The provider's WhatsApp number, for proof of payment / CashSend PINs. */
+  whatsapp: string | null;
+};
 
 export type PublicRequest = Pick<
   PaymentRequest,
@@ -90,6 +102,7 @@ export type PublicRequest = Pick<
   | "receipt_number"
   | "paid_method"
   | "cancelled_at"
+  | "customer_name"
 >;
 
 export interface PaymentPageData {

@@ -1,12 +1,14 @@
 // src/components/dashboard/ReceiptSender.tsx
 // Send a receipt straight into the customer's WhatsApp chat: type their
 // number once and WhatsApp opens on their chat with the receipt filled in.
-// The number isn't saved anywhere (we don't collect customers' details).
+// The provider can save the customer's name and number on the job (on by
+// default, easy to untick). Only that provider can see them.
 "use client";
 
 import { useId, useState, type FormEvent } from "react";
 import { cleanPhoneInput, formatSAPhone, normalizeSAPhone, PHONE_INPUT_MAX } from "@/lib/validation";
 import { receiptLabel, receiptMessage, toWhatsAppNumber, type ReceiptInfo } from "@/lib/receipt";
+import { saveJobCustomer } from "@/app/dashboard/customer-actions";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Surface";
 
@@ -15,6 +17,8 @@ export interface ReceiptSenderProps {
   /** Absolute receipt page URL (receiptUrl()). */
   url: string;
   autoFocus?: boolean;
+  /** Already saved on this job, if any. */
+  customer?: { name: string | null; phone: string | null };
 }
 
 type ShareState = "idle" | "working" | "failed";
@@ -26,13 +30,18 @@ function openExternal(url: string) {
   if (!win) window.location.href = url;
 }
 
-export function ReceiptSender({ info, url, autoFocus = false }: ReceiptSenderProps) {
+export function ReceiptSender({ info, url, autoFocus = false, customer }: ReceiptSenderProps) {
   const inputId = useId();
-  const [phone, setPhone] = useState("");
+  const savedName = customer?.name ?? "";
+  const savedPhone = customer?.phone ?? null;
+  const [name, setName] = useState(savedName);
+  const [phone, setPhone] = useState(savedPhone ? formatSAPhone(savedPhone) : "");
+  const [save, setSave] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [share, setShare] = useState<ShareState>("idle");
 
-  const message = receiptMessage(info, url);
+  const message = receiptMessage({ ...info, customerName: name.trim() || null }, url);
   const label = receiptLabel(info);
   const imageUrl = `${url}/image`;
 
@@ -49,7 +58,18 @@ export function ReceiptSender({ info, url, autoFocus = false }: ReceiptSenderPro
     }
     setError(null);
     setPhone(formatSAPhone(local));
+    // Open WhatsApp first: browsers only allow it straight from the tap.
     openExternal(`https://wa.me/${toWhatsAppNumber(local)}?text=${encodeURIComponent(message)}`);
+
+    const changed = name.trim() !== savedName || local !== savedPhone;
+    if (save && changed) {
+      setSaveError(null);
+      saveJobCustomer(info.code, name, local)
+        .then((result) => {
+          if (!result.ok) setSaveError(result.error);
+        })
+        .catch(() => setSaveError("Sent, but couldn't save the customer. Check your signal."));
+    }
   }
 
   async function sharePicture() {
@@ -79,7 +99,21 @@ export function ReceiptSender({ info, url, autoFocus = false }: ReceiptSenderPro
   return (
     <div className="space-y-3">
       <form onSubmit={sendToNumber} noValidate className="space-y-2.5">
-        <label htmlFor={inputId} className="block text-[15px] font-semibold text-ink">
+        <label htmlFor={`${inputId}-name`} className="block text-[15px] font-semibold text-ink">
+          Customer&apos;s name <span className="font-normal text-muted">(optional)</span>
+        </label>
+        <input
+          id={`${inputId}-name`}
+          type="text"
+          autoComplete="off"
+          autoCapitalize="words"
+          maxLength={80}
+          placeholder="e.g. Sipho"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="min-h-14 w-full rounded-2xl border-2 border-line bg-white px-4 text-[17px] text-ink placeholder:text-muted/60 focus:border-jade focus:outline-none"
+        />
+        <label htmlFor={inputId} className="block pt-1 text-[15px] font-semibold text-ink">
           Customer&apos;s WhatsApp number
         </label>
         <input
@@ -104,6 +138,15 @@ export function ReceiptSender({ info, url, autoFocus = false }: ReceiptSenderPro
             {error}
           </p>
         )}
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-[15px] text-ink">
+          <input
+            type="checkbox"
+            checked={save}
+            onChange={(e) => setSave(e.target.checked)}
+            className="h-5 w-5 shrink-0 accent-jade"
+          />
+          Save name and number to this job
+        </label>
         <Button type="submit" size="lg" fullWidth>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M4 19l1.5-4A8 8 0 1 1 9 18.5z" />
@@ -119,6 +162,7 @@ export function ReceiptSender({ info, url, autoFocus = false }: ReceiptSenderPro
           Choose the chat myself
         </a>
       </form>
+      {saveError && <Notice tone="warning">{saveError}</Notice>}
 
       <div className="grid grid-cols-2 gap-2 border-t border-line-soft pt-3">
         <Button variant="secondary" onClick={sharePicture} loading={share === "working"} loadingText="Getting it…" className="px-2">

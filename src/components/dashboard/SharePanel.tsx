@@ -9,11 +9,13 @@ export interface SharePanelProps {
   payUrl: string;
   description: string;
   amountCents: number;
+  customer?: { name: string | null; phone: string | null };
 }
 
 /** QR code to show the customer in person, plus WhatsApp and copy for remote. */
-export function SharePanel({ payUrl, description, amountCents }: SharePanelProps) {
-  const message = `Hi! Here's the payment link for ${description} (${formatRand(amountCents)}). You can pay by EFT or CashSend, no app needed:`;
+export function SharePanel({ payUrl, description, amountCents, customer }: SharePanelProps) {
+  const firstName = customer?.name?.trim().split(/\s+/)[0];
+  const message = `Hi${firstName ? ` ${firstName}` : ""}! Here's the payment link for ${description} (${formatRand(amountCents)}). You can pay by EFT or CashSend, no app needed:`;
 
   return (
     <div className="flex flex-col gap-4">
@@ -25,7 +27,11 @@ export function SharePanel({ payUrl, description, amountCents }: SharePanelProps
         </svg>
         In the sun? Turn your brightness all the way up.
       </p>
-      <ShareLinks url={payUrl} message={message} />
+      <ShareLinks
+        url={payUrl}
+        message={message}
+        recipient={customer?.phone ? { name: customer.name, phone: customer.phone } : null}
+      />
     </div>
   );
 }

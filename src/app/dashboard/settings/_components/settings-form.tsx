@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  PAYOUT_KEYS,
   payoutFromProvider,
   payoutToColumns,
   validatePayout,
@@ -30,14 +31,6 @@ interface ProfileErrors {
 
 type Status = "idle" | "saving" | "saved" | "error";
 
-const PAYOUT_KEYS = [
-  "payout_method",
-  "bank_name",
-  "account_number",
-  "account_type",
-  "cashsend_phone",
-  "cashsend_bank",
-] as const;
 
 export function SettingsForm({ provider }: SettingsFormProps) {
   const router = useRouter();
@@ -143,6 +136,14 @@ export function SettingsForm({ provider }: SettingsFormProps) {
         <CardTitle description="Customers see these options when they pay you.">
           How customers pay you
         </CardTitle>
+        {provider.bank_name && (!provider.account_holder || !provider.branch_code) && (
+          <div className="mb-4">
+            <Notice tone="info">
+              New: customers now see your account holder name and branch code. We&apos;ve filled
+              in the usual values. Check them, then save with your PIN.
+            </Notice>
+          </div>
+        )}
         <PayoutDetailsFields
           value={payout}
           errors={payoutErrors}

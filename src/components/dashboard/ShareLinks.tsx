@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { buttonClasses } from "@/components/ui/Button";
+import { toWhatsAppNumber } from "@/lib/receipt";
 
 const CHAT_ICON = "M4 19l1.5-4A8 8 0 1 1 9 18.5z";
 const COPY_ICON = "M9 9h11v11H9zM5 15V6a2 2 0 0 1 2-2h8";
@@ -21,10 +22,14 @@ export interface ShareLinksProps {
   url: string;
   /** Text sent with the link on WhatsApp. The URL is appended. */
   message: string;
+  /** Saved customer ("0712345678"): WhatsApp opens on their chat. */
+  recipient?: { name: string | null; phone: string } | null;
 }
 
-export function ShareLinks({ url, message }: ShareLinksProps) {
-  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${message}\n${url}`)}`;
+export function ShareLinks({ url, message, recipient }: ShareLinksProps) {
+  const target = recipient ? toWhatsAppNumber(recipient.phone) : "";
+  const whatsappUrl = `https://wa.me/${target}?text=${encodeURIComponent(`${message}\n${url}`)}`;
+  const recipientLabel = recipient ? (recipient.name?.trim().split(/\s+/)[0] ?? "customer") : null;
   const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -56,7 +61,7 @@ export function ShareLinks({ url, message }: ShareLinksProps) {
         className={buttonClasses({ variant: "whatsapp", size: "lg", fullWidth: true })}
       >
         <Icon d={CHAT_ICON} />
-        Send on WhatsApp
+        {recipientLabel ? `Send to ${recipientLabel} on WhatsApp` : "Send on WhatsApp"}
       </a>
       <button
         type="button"

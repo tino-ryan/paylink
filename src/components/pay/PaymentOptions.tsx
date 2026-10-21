@@ -5,8 +5,9 @@ import { useState } from "react";
 import { reportPaymentSent } from "@/app/pay/actions";
 import { centsToPlainAmount, formatRand } from "@/lib/utils";
 import { formatSAPhone } from "@/lib/validation";
+import { toWhatsAppNumber } from "@/lib/receipt";
 import type { PublicPayoutDetails, PublicRequest } from "@/lib/types";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonClasses } from "@/components/ui/Button";
 import { CopyRow } from "@/components/ui/CopyRow";
 import { Notice, SectionTitle } from "@/components/ui/Surface";
 
@@ -122,6 +123,17 @@ export function PaymentOptions({ provider, request }: PaymentOptionsProps) {
     }
   }
 
+  // Proof of payment goes straight to the provider on WhatsApp: the customer
+  // attaches the screenshot or PDF from their banking app there. PayLink
+  // never stores it, and never sees a CashSend PIN.
+  const proofMessage =
+    tab === "cashsend"
+      ? `Hi ${firstName}, I've sent ${amount} by CashSend for ${request.description} (ref ${reference}).\nVoucher number: \nPIN: `
+      : `Hi ${firstName}, I've paid ${amount} for ${request.description} (ref ${reference}). Here's my proof of payment:`;
+  const proofUrl = provider.whatsapp
+    ? `https://wa.me/${toWhatsAppNumber(provider.whatsapp)}?text=${encodeURIComponent(proofMessage)}`
+    : null;
+
   if (reported) {
     return (
       <section className="flex flex-col items-center gap-3 rounded-[22px] bg-white px-5 py-7 text-center">
@@ -132,8 +144,31 @@ export function PaymentOptions({ provider, request }: PaymentOptionsProps) {
         </svg>
         <h2 className="font-heading text-[26px] text-ink">Thank you! We&apos;ve told {firstName}</h2>
         <p className="text-[15px] leading-normal text-muted">
-          {firstName} will confirm once the money shows in their account. You can close this page.
+          {firstName} will confirm once the money shows in their account.
         </p>
+        {proofUrl && (
+          <div className="mt-2 flex w-full flex-col gap-2">
+            <a
+              href={proofUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonClasses({ variant: "primary", size: "lg", fullWidth: true })}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 19l1.5-4A8 8 0 1 1 9 18.5z" />
+              </svg>
+              {tab === "cashsend"
+                ? `Send the voucher and PIN to ${firstName}`
+                : `Send proof of payment to ${firstName}`}
+            </a>
+            <p className="text-sm leading-normal text-muted">
+              {tab === "cashsend"
+                ? `Opens WhatsApp. Type in the voucher number and PIN from your SMS. Only ever share them with ${firstName}.`
+                : "Opens WhatsApp. Attach the payment screenshot or PDF from your banking app."}
+            </p>
+          </div>
+        )}
+        <p className="text-sm text-muted">This page is your link to the receipt once {firstName} confirms.</p>
       </section>
     );
   }
@@ -146,14 +181,18 @@ export function PaymentOptions({ provider, request }: PaymentOptionsProps) {
     );
   }
 
+  const holder = provider.account_holder ?? provider.full_name;
   const eftRows: DetailRow[] = [
     { label: "Bank", display: provider.bank_name ?? "" },
-    { label: "Account name", display: provider.full_name, copy: provider.full_name },
+    { label: "Account holder", display: holder, copy: holder },
     {
       label: "Account number",
       display: provider.account_number ?? "",
       copy: provider.account_number ?? "",
     },
+    ...(provider.branch_code
+      ? [{ label: "Branch code", display: provider.branch_code, copy: provider.branch_code }]
+      : []),
     {
       label: "Account type",
       display: provider.account_type === "savings" ? "Savings" : "Cheque",
@@ -176,7 +215,7 @@ export function PaymentOptions({ provider, request }: PaymentOptionsProps) {
     CASHSEND_FIRST_STEP[bank] ?? "Open your banking app and find CashSend (or Send Cash).",
     `Enter ${formatSAPhone(provider.cashsend_phone ?? "")} as the number.`,
     `Enter ${amount} as the amount and ${reference} as the reference.`,
-    `You'll get a PIN. WhatsApp it to ${firstName} so they can collect the cash.`,
+    `You'll get a voucher number and PIN by SMS. Tap “I've sent the money” below, then send both to ${firstName} on WhatsApp so they can collect the cash.`,
   ];
 
   return (

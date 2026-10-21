@@ -39,6 +39,7 @@ export function ReceiptDocument({ provider, request }: ReceiptDocumentProps) {
 
   const details: { label: string; value: string }[] = [
     { label: "Receipt number", value: receiptNo },
+    ...(request.customer_name ? [{ label: "Received from", value: request.customer_name }] : []),
     ...(request.paid_at
       ? [{ label: "Date paid", value: `${formatDate(request.paid_at)}, ${formatTime(request.paid_at)}` }]
       : []),

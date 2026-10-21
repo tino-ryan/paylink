@@ -12,6 +12,8 @@ export interface ReceiptInfo {
   paidAt: string | null;
   paidMethod: PaidMethod | null;
   providerName: string;
+  /** Saved customer name, used to greet them. */
+  customerName?: string | null;
 }
 
 /** The customer-facing receipt page. Separate from /pay/[code] so WhatsApp
@@ -40,7 +42,9 @@ export const toWhatsAppNumber = (localPhone: string) => `27${localPhone.slice(1)
  * customer never opens the link.
  */
 export function receiptMessage(info: ReceiptInfo, url: string): string {
+  const firstName = info.customerName?.trim().split(/\s+/)[0];
   const lines = [
+    ...(firstName ? [`Hi ${firstName}!`, ""] : []),
     `*Receipt ${receiptLabel(info)}* ✅`,
     `From: ${info.providerName}`,
     `For: ${info.description}`,
